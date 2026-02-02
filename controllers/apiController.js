@@ -2395,7 +2395,7 @@ const buyTest = async (req, res) => {
       finalCategories = allCategories.map((c) => c._id.toString());
 
       // 💰 Upgrade logic
-      amount = 499;
+      amount = 999;
     }
 
     // ===================================
@@ -2427,7 +2427,7 @@ const buyTest = async (req, res) => {
       }
 
       finalCategories = payableCategories;
-      amount = payableCategories.length * 99;
+      amount = payableCategories.length * 499;
     }
 
     // ============================
