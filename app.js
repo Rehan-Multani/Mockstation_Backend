@@ -55,7 +55,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Enable CORS for all routes
 app.use(cors({
-  origin: 'http://localhost:5173', // Update this to your client's origin
+  origin: '*', // Update this to your client's origin
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   maxAge: 86400 // 24 hours
