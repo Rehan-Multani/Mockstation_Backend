@@ -7,16 +7,19 @@ const UserPlanSchema = new mongoose.Schema(
       unique: true,
       required: true,
     },
-    categoryId: [
+    categoryGroupIds: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Category",
+        ref: "CategoryGroup",
       },
     ],
+    planId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Plan",
+    },
     price: {
       type: Number,
       default: 0,
-      required: true,
     },
     isSelectedAll: {
       type: Boolean,

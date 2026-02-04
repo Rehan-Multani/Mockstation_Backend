@@ -1685,33 +1685,35 @@ const GetPointsSetting = async (req, res) => {
 // Get Plan
 const GetPlans = async (req, res) => {
   try {
-    const plan = await Plan.find();
-    if (plan.length >= 0) {
-      const planData = plan.map((plans) => ({
-        _id: plans._id,
-        points: plans.points,
-        price: plans.price,
-      }));
-      res.json({
-        data: {
-          success: 1,
-          message: "Plan found Successfully..",
-          planDetails: planData,
-          error: 0,
-        },
+    const plans = await Plan.find()
+      .populate({
+        path: "categoryGroup",
+        select: "displayName" // 👈 sirf ye field aayegi
       });
-    } else {
-      return res.json({
-        data: { success: 0, message: "Plan not found", error: 1 },
-      });
-    }
+
+    const planData = plans.map((plan) => ({
+      _id: plan._id,
+      planId: plan.planId,
+      price: plan.price,
+      categoryGroup: plan.categoryGroup,
+    }));
+
+    res.json({
+      data: {
+        success: 1,
+        message: "Plans found successfully.",
+        planDetails: planData,
+        error: 0,
+      },
+    });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({
+    res.status(500).json({
       data: { success: 0, message: "Internal Server Error", error: 1 },
     });
   }
 };
+
 
 // Buy Plan
 // const BuyPlan = async (req, res) => {
@@ -2364,67 +2366,49 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-const buyTest = async (req, res) => {
+const buyPlan = async (req, res) => {
   try {
-    const { categoryGroupIds = [], isSelectedAll } = req.body;
+    const { planId } = req.body;
     const { id: userId } = req.user;
+
+    if (!planId) {
+      return res.status(400).json({
+        success: false,
+        message: "planId is required",
+      });
+    }
+
+    const plan = await Plan.findById(planId);
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: "Plan not found",
+      });
+    }
 
     const existingPlan = await UserPlan.findOne({
       userId,
       planStatus: "active",
     });
 
-    let finalGroupIds = [];
-    let amount = 0;
-
-    // ============================
-    // 🟢 BUY ALL
-    // ============================
-    if (isSelectedAll === true) {
-      if (existingPlan && existingPlan.isSelectedAll) {
+    // Check if user already has this specific content or all access
+    if (existingPlan) {
+      if (existingPlan.isSelectedAll) {
         return res.status(400).json({
           success: false,
-          message: "You already have all access",
+          message: "You already have all-access plan",
         });
       }
 
-      const allGroups = await CategoryGroup.find({}, "_id");
-      finalGroupIds = allGroups.map((g) => g._id.toString());
-
-      amount = 999;
-    }
-
-    // ============================
-    // 🔵 BUY SELECTED
-    // ============================
-    else {
-      if (!Array.isArray(categoryGroupIds) || categoryGroupIds.length === 0) {
+      if (plan.categoryGroup && existingPlan.categoryGroupIds.includes(plan.categoryGroup.toString())) {
         return res.status(400).json({
           success: false,
-          message: "categoryGroupIds array required",
+          message: "You already have access to this test group",
         });
       }
-
-      let payable = categoryGroupIds;
-
-      if (existingPlan) {
-        const owned = (existingPlan.categoryGroupIds || []).map((id) =>
-          id.toString(),
-        );
-
-        payable = categoryGroupIds.filter((id) => !owned.includes(id));
-
-        if (payable.length === 0) {
-          return res.status(400).json({
-            success: false,
-            message: "Selected tests already purchased",
-          });
-        }
-      }
-
-      finalGroupIds = payable;
-      amount = payable.length * 499;
     }
+
+    const amount = plan.price;
 
     // ============================
     // 🔐 RAZORPAY ORDER
@@ -2435,8 +2419,7 @@ const buyTest = async (req, res) => {
       receipt: `receipt_${Date.now()}`,
       notes: {
         userId,
-        categoryGroupIds: finalGroupIds.join(","),
-        isSelectedAll: isSelectedAll ? "YES" : "NO",
+        planId: plan._id.toString(),
       },
     });
 
@@ -2444,11 +2427,10 @@ const buyTest = async (req, res) => {
       success: true,
       orderId: order.id,
       amount,
-      categoryGroupIds: finalGroupIds,
-      isSelectedAll: !!isSelectedAll,
+      planId: plan._id,
     });
   } catch (err) {
-    console.error("Buy Test Error:", err);
+    console.error("Buy Plan Error:", err);
     res.status(500).json({
       success: false,
       message: "Something went wrong",
@@ -2478,14 +2460,24 @@ const verifyPayment = async (req, res) => {
       });
     }
 
-    // 📦 Fetch order
+    // 📦 Fetch order to get notes
     const order = await razorpay.orders.fetch(razorpay_order_id);
+    const planId = order.notes.planId;
 
-    const categoryGroupIds = order.notes.categoryGroupIds
-      ? order.notes.categoryGroupIds.split(",")
-      : [];
+    if (!planId) {
+      return res.status(400).json({
+        success: false,
+        message: "Plan ID not found in order notes",
+      });
+    }
 
-    const isSelectedAll = order.notes.isSelectedAll === "YES";
+    const plan = await Plan.findById(planId);
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: "Associated plan details not found",
+      });
+    }
 
     let userPlan = await UserPlan.findOne({ userId });
 
@@ -2497,22 +2489,27 @@ const verifyPayment = async (req, res) => {
     }
 
     // ===============================
-    // 🧠 MERGE PLAN DATA
+    // 🧠 ACTIVATE PLAN DATA
     // ===============================
-    if (isSelectedAll) {
+    userPlan.planId = plan._id;
+    userPlan.price = plan.price;
+
+    if (!plan.categoryGroup) {
+      // If plan has no specific categoryGroup, it's an "All Access" plan
       userPlan.isSelectedAll = true;
-      userPlan.categoryGroupIds = categoryGroupIds;
+      // Optionally populate all category groups here or handle it in Auth logic
+      const allGroups = await CategoryGroup.find({}, "_id");
+      userPlan.categoryGroupIds = allGroups.map((g) => g._id);
     } else {
+      // Direct access to specific category group
       const merged = new Set([
         ...(userPlan.categoryGroupIds || []).map((id) => id.toString()),
-        ...categoryGroupIds,
+        plan.categoryGroup.toString(),
       ]);
-
       userPlan.categoryGroupIds = Array.from(merged);
     }
 
     userPlan.planStatus = "active";
-    userPlan.price = order.amount / 100;
 
     // ⏰ Expiry = 1 year
     const expiryDate = new Date();
@@ -2539,10 +2536,9 @@ const fetchUserPlan = async (req, res) => {
   try {
     const { id: userId } = req.user;
 
-    const plan = await UserPlan.findOne({ userId }).populate(
-      "categoryGroupIds",
-      "displayName",
-    );
+    const plan = await UserPlan.findOne({ userId })
+      .populate("categoryGroupIds", "displayName")
+      .populate("planId");
 
     if (!plan) {
       return res.json({
@@ -2557,6 +2553,7 @@ const fetchUserPlan = async (req, res) => {
       success: true,
       isSelectedAll: plan.isSelectedAll,
       categoryGroupIds: plan.categoryGroupIds,
+      planId: plan.planId,
       planStatus: plan.planStatus,
       price: plan.price,
       expiresAt: plan.expiresAt,
@@ -2614,7 +2611,7 @@ module.exports = {
   GetNotifications,
   GetQuizBySubcategory,
   getCategoryGroups,
-  buyTest,
+  buyPlan,
   verifyPayment,
   fetchUserPlan,
 };

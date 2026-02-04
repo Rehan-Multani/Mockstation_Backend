@@ -13,7 +13,7 @@ const Subcategory = require("../models/subcategoryModel");
 // Multer for file uploads
 const multer = require("multer");
 
-const  AuthMiddleware  = require("../middleware/userMiddleware");
+const AuthMiddleware = require("../middleware/userMiddleware");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -28,9 +28,9 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // razorpay buy plan
-api_route.post("/buyTest", AuthMiddleware ,apiController.buyTest);
-api_route.post("/verifyPayment",AuthMiddleware, apiController.verifyPayment);
-api_route.post("/fetchUserPlan",AuthMiddleware, apiController.fetchUserPlan);
+api_route.post("/buyPlan", AuthMiddleware, apiController.buyPlan);
+api_route.post("/verifyPayment", AuthMiddleware, apiController.verifyPayment);
+api_route.get("/fetchUserPlan", AuthMiddleware, apiController.fetchUserPlan);
 
 // Signup
 api_route.post("/checkregistereduser", apiController.CheckRegisteredUser);
@@ -107,8 +107,8 @@ api_route.post("/getadssettings", apiController.GetAdsSettings);
 // Points Setting
 api_route.post("/getpointssetting", apiController.GetPointsSetting);
 
-// // Points Plan
-// api_route.post('/get_plan', apiController.GetPlans);
+// Points Plan
+api_route.get("/get_plan", apiController.GetPlans);
 // api_route.post('/buy_plan', apiController.BuyPlan);
 // api_route.post('/plan_history', apiController.PlanHistory);
 
