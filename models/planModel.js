@@ -1,6 +1,12 @@
-const mongoose = require("mongoose");
-const palnSchema = new mongoose.Schema({
-
+const planSchema = new mongoose.Schema({
+    planName: {
+        type: String,
+        required: true
+    },
+    planValidity: {
+        type: String,
+        required: true
+    },
     price: {
         type: Number,
         default: 0,
@@ -20,4 +26,4 @@ const palnSchema = new mongoose.Schema({
 
     { timestamps: true });
 
-module.exports = mongoose.model('Plan', palnSchema);
+module.exports = mongoose.model('Plan', planSchema);

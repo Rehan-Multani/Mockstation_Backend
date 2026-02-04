@@ -36,6 +36,8 @@ const addPlan = async (req, res) => {
             const randomPlanId = `PLAN-${randomStr}`;
 
             const planData = new Plan({
+                planName: req.body.planName,
+                planValidity: req.body.planValidity,
                 price: req.body.price,
                 planId: randomPlanId,
                 categoryGroup: categoryGroupVal
@@ -109,6 +111,8 @@ const updatePlan = async (req, res) => {
             await Plan.findByIdAndUpdate({ _id: id },
                 {
                     $set: {
+                        planName: req.body.planName,
+                        planValidity: req.body.planValidity,
                         price: req.body.price,
                         categoryGroup: categoryGroupVal
                     }

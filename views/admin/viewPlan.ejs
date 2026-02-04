@@ -26,8 +26,10 @@
                                                     <tr>
                                                         <th>Sr No</th>
                                                         <th>Plan ID</th>
+                                                        <th>Plan Name</th>
                                                         <th>Category Group</th>
-                                                        <th>Point's Prices</th>
+                                                        <th>Validity</th>
+                                                        <th>Price</th>
                                                         <th>Action</th>
                                                     </tr>
                                                 </thead>
@@ -45,8 +47,19 @@
                                                                 </td>
                                                                 <td>
                                                                     <strong>
+                                                                        <%= allPlan.planName %>
+                                                                    </strong>
+                                                                </td>
+                                                                <td>
+                                                                    <strong>
                                                                         <%= allPlan.categoryGroup ?
-                                                                            allPlan.categoryGroup.displayName : 'All Category Groups' %>
+                                                                            allPlan.categoryGroup.displayName
+                                                                            : 'All Category Groups' %>
+                                                                    </strong>
+                                                                </td>
+                                                                <td>
+                                                                    <strong>
+                                                                        <%= allPlan.planValidity %>
                                                                     </strong>
                                                                 </td>
 
