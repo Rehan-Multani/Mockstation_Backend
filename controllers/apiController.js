@@ -1693,6 +1693,8 @@ const GetPlans = async (req, res) => {
 
     const planData = plans.map((plan) => ({
       _id: plan._id,
+      planName: plan.planName,
+      planValidity: plan.planValidity,
       planId: plan.planId,
       price: plan.price,
       categoryGroup: plan.categoryGroup,
