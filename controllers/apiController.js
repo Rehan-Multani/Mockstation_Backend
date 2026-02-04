@@ -2415,8 +2415,12 @@ const buyPlan = async (req, res) => {
     // ============================
     // 🔐 RAZORPAY ORDER
     // ============================
+
+
+    const amountInPaise = amount * 100;
+
     const order = await razorpay.orders.create({
-      amount: amount * 100,
+      amount: amountInPaise,
       currency: "INR",
       receipt: `receipt_${Date.now()}`,
       notes: {
@@ -2428,7 +2432,7 @@ const buyPlan = async (req, res) => {
     res.json({
       success: true,
       orderId: order.id,
-      amount,
+      amountInPaise,
       planId: plan._id,
     });
   } catch (err) {
