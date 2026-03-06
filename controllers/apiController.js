@@ -1252,7 +1252,9 @@ const GetQuizByCategory = async (req, res) => {
     const quizzes = await Quiz.find({
       categoryId: req.body.categoryId,
       is_active: 1,
-    }).populate("categoryId");
+    })
+      .populate("categoryId")
+      .sort({ createdAt: -1 }); // latest first;
     console.log("Fetched quizzes from MongoDB:", quizzes);
 
     if (quizzes.length > 0) {
@@ -1685,11 +1687,10 @@ const GetPointsSetting = async (req, res) => {
 // Get Plan
 const GetPlans = async (req, res) => {
   try {
-    const plans = await Plan.find()
-      .populate({
-        path: "categoryGroup",
-        select: "displayName" // 👈 sirf ye field aayegi
-      });
+    const plans = await Plan.find().populate({
+      path: "categoryGroup",
+      select: "displayName", // 👈 sirf ye field aayegi
+    });
 
     const planData = plans.map((plan) => ({
       _id: plan._id,
@@ -1715,7 +1716,6 @@ const GetPlans = async (req, res) => {
     });
   }
 };
-
 
 // Buy Plan
 // const BuyPlan = async (req, res) => {
@@ -2402,7 +2402,10 @@ const buyPlan = async (req, res) => {
         });
       }
 
-      if (plan.categoryGroup && existingPlan.categoryGroupIds.includes(plan.categoryGroup.toString())) {
+      if (
+        plan.categoryGroup &&
+        existingPlan.categoryGroupIds.includes(plan.categoryGroup.toString())
+      ) {
         return res.status(400).json({
           success: false,
           message: "You already have access to this test group",
@@ -2415,7 +2418,6 @@ const buyPlan = async (req, res) => {
     // ============================
     // 🔐 RAZORPAY ORDER
     // ============================
-
 
     const amountInPaise = amount * 100;
 
